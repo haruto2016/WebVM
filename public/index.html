@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebVM - Cloud VirtualBox</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="container">
+        <header>
+            <h1>WebVM Control Center</h1>
+            <p>High-Performance Remote Emulation</p>
+        </header>
+
+        <main id="main-content">
+            <!-- Initial Setup View -->
+            <div id="setup-view" class="vm-card">
+                <h2>Create Your Virtual Machine</h2>
+                <p>Configure your cloud PC resources</p>
+                
+                <div class="form-group">
+                    <label>VM Name</label>
+                    <input type="text" id="setup-name" placeholder="Windows 11 Pro">
+                </div>
+
+                <div class="form-group">
+                    <label>Initial Boot Image (ISO or VHD)</label>
+                    <input type="file" id="setup-file" accept=".iso,.vhd">
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Memory (RAM)</label>
+                        <select id="setup-ram">
+                            <option value="2048">2 GB</option>
+                            <option value="4096" selected>4 GB (Recommended)</option>
+                            <option value="8192">8 GB</option>
+                            <option value="16384">16 GB</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Disk Size</label>
+                        <select id="setup-disk">
+                            <option value="32G">32 GB</option>
+                            <option value="64G" selected>64 GB</option>
+                            <option value="128G">128 GB</option>
+                            <option value="256G">256 GB</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="create-btn" class="btn primary">Create & Initialize</button>
+                </div>
+            </div>
+
+            <!-- VM Management View (Hidden initially) -->
+            <div id="manage-view" class="vm-card" style="display: none;">
+                <h2 id="display-name">VM Name</h2>
+                <p>Status: <span id="vm-status" class="status-text">Ready</span></p>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <label>Local Memory Allocated</label>
+                        <span id="ram-usage">0 MB</span>
+                    </div>
+                    <div class="stat">
+                        <label>Network Latency</label>
+                        <span id="latency">-- ms</span>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="launch-btn" class="btn primary">Launch Virtual Machine</button>
+                    <button id="reset-btn" class="btn danger">Reset VM</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

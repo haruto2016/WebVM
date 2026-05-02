@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>WebVM Console</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <iframe id="vnc-frame"></iframe>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const port = params.get('port');
+        const host = window.location.hostname; // Assuming streaming server is same or proxied
+        
+        // Pointing to the live Streaming Server's websockify port
+        document.getElementById('vnc-frame').src = `https://streaming-production-e1f3.up.railway.app:${port}/vnc.html?autoconnect=true`;
+    </script>
+</body>
+</html>

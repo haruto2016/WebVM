@@ -47,7 +47,7 @@
             <button class="tool-btn" onclick="showModal('settings-modal')"><span>⚙️</span><span>設定</span></button>
             <div style="width: 1px; height: 30px; background: var(--border); margin: 0 10px;"></div>
             
-            <button class="tool-btn primary" id="start-btn" onclick="startVM()"><span>▶️</span><span>起動</span></button>
+            <button class="tool-btn primary" id="start-btn" onclick="startCloudVM()"><span>▶️</span><span>起動</span></button>
             <button class="tool-btn" id="stop-btn" onclick="stopVM()" disabled><span>⏹️</span><span>停止</span></button>
             <button class="tool-btn" id="save-btn" onclick="saveVMState()" disabled><span>💾</span><span>保存</span></button>
             
@@ -158,10 +158,49 @@
             }
         }
         
-        async function saveAndDownload() {
-            if (!currentVMId) return;
-            window.location.href = `/api/download_disk/${currentVMId}`;
+        let vms = [
+            { id: 'win11', name: 'Windows 11 (Cloud)', status: '電源オフ' }
+        ];
+
+        function createVM() {
+            const name = document.getElementById('new-vm-name').value || "新規仮想マシン";
+            const id = 'vm-' + Date.now();
+            
+            const newVM = {
+                id: id,
+                name: name,
+                status: '電源オフ'
+            };
+            
+            vms.push(newVM);
+            updateVMList();
+            hideModal('new-vm-modal');
+            alert(name + " を作成しました！「起動」ボタンでファイルを選択してください。");
         }
+
+        function updateVMList() {
+            const list = document.getElementById('vm-list');
+            list.innerHTML = vms.map(vm => `
+                <div class="vm-item ${currentVMId === vm.id ? 'active' : ''}" onclick="selectVM('${vm.id}')">
+                    <div class="vm-icon">📦</div>
+                    <div class="vm-info">
+                        <span class="vm-name">${vm.name}</span>
+                        <span class="vm-status">${vm.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectVM(id) {
+            const vm = vms.find(v => v.id === id);
+            if (!vm) return;
+            currentVMId = id;
+            document.getElementById('selected-vm-name').innerText = vm.name;
+            updateVMList();
+        }
+
+        function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
     <input type="file" id="local-file-input" style="display: none;" onchange="handleFileSelect(event)">
 </body>

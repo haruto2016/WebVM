@@ -20,23 +20,13 @@
         </div>
         
         <div class="vm-list" id="vm-list">
-            <div class="vm-item active" onclick="selectVM('win11')">
-                <div class="vm-icon">🪟</div>
-                <div class="vm-info">
-                    <span class="vm-name">Windows 11 (Cloud)</span>
-                    <span class="vm-status" id="vm-status-text">電源オフ</span>
-                </div>
-                <div class="cloud-pulse" style="margin-left: auto; display: none;" id="cloud-sync-indicator"></div>
-            </div>
+            <!-- VM items will be injected here -->
         </div>
 
         <div style="padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;">
             <button class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="showModal('new-vm-modal')">
                 <span>＋</span> 新規作成
             </button>
-            <div style="font-size: 0.7rem; color: var(--text-dim); text-align: center;">
-                Storage: <span id="cloud-storage-status" style="color: #00ff00;">STANDALONE</span>
-            </div>
         </div>
     </aside>
 
@@ -49,19 +39,9 @@
             
             <button class="tool-btn primary" id="start-btn" onclick="startCloudVM()"><span>▶️</span><span>起動</span></button>
             <button class="tool-btn" id="stop-btn" onclick="stopVM()" disabled><span>⏹️</span><span>停止</span></button>
-            <button class="tool-btn" id="save-btn" onclick="saveVMState()" disabled><span>💾</span><span>保存</span></button>
             
             <div style="flex: 1;"></div>
-            
-            <div style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--border);">
-                <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                    <span style="font-size: 0.6rem; color: var(--text-dim);">SELECTED ISO</span>
-                    <span style="font-size: 0.8rem; font-weight: 500;" id="current-iso-name">Tiny11_Optimized.iso</span>
-                </div>
-                <button class="tool-btn" onclick="uploadISO()" style="padding: 5px;"><span>📀</span></button>
-            </div>
-            
-            <button class="tool-btn" id="usb-btn" onclick="requestUSB()"><span>🔌</span><span>USB</span></button>
+            <button class="tool-btn" onclick="saveAndDownload()"><span>💾</span><span>保存して終了</span></button>
         </header>
 
         <section class="details-view">
@@ -73,134 +53,152 @@
                         <p style="color: var(--accent); font-weight: 600;">Microsoft Windows 11 (64-bit)</p>
                     </div>
                 </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 12px; border: 1px solid var(--border);">
-                        <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><span>💻</span> システム</h3>
-                        <p style="margin-top:10px; opacity:0.7;">ベースメモリー: <span id="stat-ram">4096 MB</span></p>
-                        <p style="opacity:0.7;">プロセッサー: <span id="stat-cpu">2 CPU</span></p>
-                        <p style="opacity:0.7;">ブート順序: 光学, ハードディスク</p>
-                        <p style="opacity:0.7; margin-top: 10px;">仮想化: VT-x/AMD-V, ネストされたページング</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 12px; border: 1px solid var(--border);">
-                        <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><span>🖼️</span> ディスプレイ</h3>
-                        <p style="margin-top:10px; opacity:0.7;">ビデオメモリー: 128 MB</p>
-                        <p style="opacity:0.7;">グラフィックスコントローラー: VMSVGA</p>
-                        <p style="opacity:0.7;">リモートデスクトップ: 無効</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 12px; border: 1px solid var(--border);">
-                        <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><span>☁️</span> クラウド・ストレージ</h3>
-                        <p style="margin-top:10px; opacity:0.7;">ステータス: 同期中</p>
-                        <p style="opacity:0.7;">最終保存: <span id="last-save">2026-04-28 12:00</span></p>
-                        <p style="opacity:0.7;">ストレージ使用量: 12.4 GB / 50 GB</p>
-                    </div>
-                </div>
             </div>
 
-    <div class="vm-display-container" id="vm-display-container">
-                <!-- Replace Canvas with iframe for noVNC Streaming -->
+            <div class="vm-display-container" id="vm-display-container" style="position: relative; flex: 1; background: #000; border-radius: 8px; overflow: hidden; min-height: 400px;">
                 <iframe id="vnc-screen" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
                 
+                <div id="boot-loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5;">
+                    <div id="spinner" style="width: 100px; height: 100px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; display: none;"></div>
+                    <p id="boot-text" style="margin-top: 20px; font-weight: 500; letter-spacing: 2px;">VirtualBox Web Ready</p>
+                    <button class="btn btn-primary" id="start-stream-btn" onclick="startCloudVM()" style="margin-top: 20px; padding: 15px 40px; font-size: 1.1rem;">クラウドPCを起動</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal" id="new-vm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#1e1e1e; padding:30px; border-radius:12px; width:400px; border:1px solid #333;">
+            <h2 style="margin-bottom:20px;">仮想マシンの新規作成</h2>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px;">名前</label>
+                <input type="text" id="new-vm-name" placeholder="Windows 11 Custom" style="width:100%; padding:10px; background:#2d2d2d; border:1px solid #444; color:#fff; border-radius:4px;">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn btn-secondary" onclick="hideModal('new-vm-modal')">キャンセル</button>
+                <button class="btn btn-primary" onclick="createVM()">作成</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#1e1e1e; padding:30px; border-radius:12px; width:400px; border:1px solid #333;">
+            <h2 style="margin-bottom:20px;">設定</h2>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px;">ストリーミングサーバーURL</label>
+                <input type="text" id="server-url-input" style="width:100%; padding:10px; background:#2d2d2d; border:1px solid #444; color:#fff; border-radius:4px;">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn { cursor: pointer; padding: 10px 20px; border-radius: 4px; border: none; font-weight: 600; }
+        .btn-primary { background: #0078d4; color: white; }
+        .btn-secondary { background: #333; color: white; }
+        .modal { display: none; }
+    </style>
+
     <script>
-        let currentVMId = null;
-        let secondaryRAM = null;
-        // ストリーミングサーバーのURL
-        let STREAMING_SERVER_URL = "https://streaming-production-e1f3.up.railway.app"; 
-
-        function reservePCMemory() {
-            try {
-                secondaryRAM = new ArrayBuffer(3 * 1024 * 1024 * 1024);
-                console.log("3GB of PC Memory reserved for Hybrid Bridge.");
-            } catch (e) {
-                secondaryRAM = new ArrayBuffer(1024 * 1024 * 1024);
-            }
-        }
-
-        async function startCloudVM() {
-            reservePCMemory();
-            document.getElementById('local-file-input').click();
-        }
-
-        async function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const bootText = document.getElementById('boot-text');
-            const startBtn = document.getElementById('start-stream-btn');
-            
-            bootText.innerText = "UPLOADING TO STREAMING SERVER...";
-            startBtn.style.display = 'none';
-            
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', `${STREAMING_SERVER_URL}/api/upload_and_start`, true);
-
-                xhr.onload = function() {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.status === 'started') {
-                        currentVMId = data.vm_id;
-                        document.getElementById('vnc-screen').src = data.stream_url;
-                        document.getElementById('vnc-screen').style.display = 'block';
-                        document.getElementById('boot-loader').style.display = 'none';
-                    } else {
-                        alert("Error: " + data.message);
-                        startBtn.style.display = 'block';
-                    }
-                };
-
-                xhr.send(formData);
-            } catch (e) {
-                alert("Streaming server unreachable. Check URL in settings.");
-                startBtn.style.display = 'block';
-            }
-        }
-        
-        let vms = [
+        let currentVMId = 'win11';
+        let STREAMING_SERVER_URL = localStorage.getItem('server_url') || "https://streaming-production-e1f3.up.railway.app";
+        let vms = JSON.parse(localStorage.getItem('vms')) || [
             { id: 'win11', name: 'Windows 11 (Cloud)', status: '電源オフ' }
         ];
+
+        function init() {
+            document.getElementById('server-url-input').value = STREAMING_SERVER_URL;
+            updateVMList();
+        }
+
+        function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function saveSettings() {
+            STREAMING_SERVER_URL = document.getElementById('server-url-input').value;
+            localStorage.setItem('server_url', STREAMING_SERVER_URL);
+            hideModal('settings-modal');
+        }
 
         function createVM() {
             const name = document.getElementById('new-vm-name').value || "新規仮想マシン";
             const id = 'vm-' + Date.now();
-            
-            const newVM = {
-                id: id,
-                name: name,
-                status: '電源オフ'
-            };
-            
-            vms.push(newVM);
+            vms.push({ id, name, status: '電源オフ' });
+            localStorage.setItem('vms', JSON.stringify(vms));
             updateVMList();
             hideModal('new-vm-modal');
-            alert(name + " を作成しました！「起動」ボタンでファイルを選択してください。");
         }
 
         function updateVMList() {
             const list = document.getElementById('vm-list');
             list.innerHTML = vms.map(vm => `
-                <div class="vm-item ${currentVMId === vm.id ? 'active' : ''}" onclick="selectVM('${vm.id}')">
-                    <div class="vm-icon">📦</div>
-                    <div class="vm-info">
-                        <span class="vm-name">${vm.name}</span>
-                        <span class="vm-status">${vm.status}</span>
+                <div class="vm-item ${currentVMId === vm.id ? 'active' : ''}" onclick="selectVM('${vm.id}')" style="padding:15px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #333;">
+                    <div style="font-size:20px;">📦</div>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:600;">${vm.name}</span>
+                        <span style="font-size:0.7rem; opacity:0.6;">${vm.status}</span>
                     </div>
                 </div>
             `).join('');
         }
 
         function selectVM(id) {
-            const vm = vms.find(v => v.id === id);
-            if (!vm) return;
             currentVMId = id;
+            const vm = vms.find(v => v.id === id);
             document.getElementById('selected-vm-name').innerText = vm.name;
             updateVMList();
         }
 
-        function showModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+        async function startCloudVM() {
+            document.getElementById('local-file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const bootText = document.getElementById('boot-text');
+            const startBtn = document.getElementById('start-stream-btn');
+            const spinner = document.getElementById('spinner');
+            
+            bootText.innerText = "UPLOADING TO CLOUD SERVER...";
+            startBtn.style.display = 'none';
+            spinner.style.display = 'block';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${STREAMING_SERVER_URL}/api/upload_and_start`, true);
+            xhr.onload = function() {
+                const data = JSON.parse(xhr.responseText);
+                if (data.status === 'started') {
+                    document.getElementById('vnc-screen').src = data.stream_url;
+                    document.getElementById('vnc-screen').style.display = 'block';
+                    document.getElementById('boot-loader').style.display = 'none';
+                } else {
+                    alert("Error: " + data.message);
+                    resetUI();
+                }
+            };
+            xhr.onerror = () => {
+                alert("Server unreachable: " + STREAMING_SERVER_URL);
+                resetUI();
+            };
+            xhr.send(formData);
+        }
+
+        function resetUI() {
+            document.getElementById('boot-text').innerText = "VirtualBox Web Ready";
+            document.getElementById('start-stream-btn').style.display = 'block';
+            document.getElementById('spinner').style.display = 'none';
+        }
+
+        window.onload = init;
     </script>
     <input type="file" id="local-file-input" style="display: none;" onchange="handleFileSelect(event)">
 </body>
